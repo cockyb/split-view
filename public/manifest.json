@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Split View",
-  "description": "치지직과 SOOP 공개 라이브를 한 창에서 최대 네 개까지 재생합니다.",
+  "description": "여러 공개 라이브를 한 창에서 최대 네 개까지 나누어 재생합니다.",
   "version": "0.1.0",
   "minimum_chrome_version": "116",
   "action": {

@@ -1,7 +1,7 @@
 import type { PlaybackErrorCode, PlaybackIssue } from "./types";
 
 const MESSAGES: Record<PlaybackErrorCode, string> = {
-  invalid_url: "지원하는 치지직 또는 SOOP 라이브 링크를 입력해 주세요.",
+  invalid_url: "지원하는 공개 라이브 링크를 입력해 주세요.",
   network_lost: "연결을 다시 잡고 있어요",
   session_expired: "재생 세션을 새로 연결하고 있어요",
   quality_unavailable: "일반 화질로 전환했어요",

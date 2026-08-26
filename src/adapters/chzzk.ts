@@ -1,11 +1,13 @@
 import { errorForHttpStatus, PlaybackError } from "../shared/errors";
-import { assertAllowedMediaUrl, parseHttpsUrl } from "../shared/security";
+import { parseHttpsUrl } from "../shared/security";
 import type { PlaybackSession, StreamMetadata, StreamSource } from "../shared/types";
 import { asRecord, asString, sourceId, type JsonRecord, type PlatformAdapter } from "./platform-adapter";
 
 const API_BASE = "https://api.chzzk.naver.com/service/v3.3";
 const CHANNEL_ID = /^[a-f0-9]{32}$/i;
-const MEDIA_HOSTS = new Set(["pstatic.net", "naver.com", "naver.net"]);
+const NAVER_MEDIA_HOSTS = new Set(["pstatic.net", "naver.com", "naver.net"]);
+const AKAMAI_MEDIA_HOST = "livecloud.akamaized.net";
+const LEGACY_MEDIA_HOST = "livecloud.pstatic.net.live.gscdn.net";
 const API_HEADERS = {
   "Front-Client-Product-Type": "web",
   "Front-Client-Platform-Type": "pc"
@@ -19,6 +21,27 @@ interface ChzzkLiveDetail {
   adult: boolean;
   liveImageUrl?: string;
   livePlaybackJson?: string;
+}
+
+function assertAllowedChzzkMediaUrl(input: string): URL {
+  const url = parseHttpsUrl(input);
+  const host = url.hostname.toLowerCase();
+  const isNaverHost = [...NAVER_MEDIA_HOSTS].some(
+    (candidate) => host === candidate || host.endsWith(`.${candidate}`)
+  );
+  const isAkamaiChzzkPath =
+    host === AKAMAI_MEDIA_HOST && (url.pathname === "/chzzk" || url.pathname.startsWith("/chzzk/"));
+  const isLegacyHost = host === LEGACY_MEDIA_HOST || host.endsWith(`.${LEGACY_MEDIA_HOST}`);
+  if (!isNaverHost && !isAkamaiChzzkPath && !isLegacyHost) {
+    throw new PlaybackError("adapter_contract_changed");
+  }
+  return url;
+}
+
+function encodeBgdaToken(value: string): string {
+  return encodeURIComponent(value)
+    .replaceAll("*", "%2A")
+    .replaceAll("%3D", "=");
 }
 
 function channelIdFromUrl(input: string): string | undefined {
@@ -72,7 +95,7 @@ export function parseChzzkPlaybackJson(raw: string, sourceIdValue: string): Play
     media.find((item) => asString(item.protocol)?.toUpperCase() === "HLS");
   const manifestUrl = asString(selected?.path);
   if (!manifestUrl) throw new PlaybackError("adapter_contract_changed");
-  const url = assertAllowedMediaUrl(manifestUrl, MEDIA_HOSTS);
+  const url = assertAllowedChzzkMediaUrl(manifestUrl);
   const hdntsExpiry = url.searchParams.get("hdnts")
     ?.split("~")
     .find((part) => part.startsWith("exp="))
@@ -90,15 +113,17 @@ export function parseChzzkPlaybackJson(raw: string, sourceIdValue: string): Play
 }
 
 export function rewriteChzzkMediaUrl(input: string, manifestUrl: string): string {
-  const target = new URL(input, manifestUrl);
-  assertAllowedMediaUrl(target.toString(), MEDIA_HOSTS);
+  const target = assertAllowedChzzkMediaUrl(new URL(input, manifestUrl).toString());
   const manifest = new URL(manifestUrl);
   const hdnts = manifest.searchParams.get("hdnts");
-  if (hdnts && !target.searchParams.has("__bgda__") && !target.searchParams.has("hdnts")) {
-    target.searchParams.set("__bgda__", hdnts);
+  if (
+    hdnts &&
+    target.pathname.toLowerCase().endsWith(".m4v") &&
+    !target.searchParams.has("__bgda__") &&
+    !target.searchParams.has("hdnts")
+  ) {
+    target.search += `${target.search ? "&" : ""}__bgda__=${encodeBgdaToken(hdnts)}`;
   }
-  const vp = manifest.searchParams.get("vp");
-  if (vp && !target.searchParams.has("vp")) target.searchParams.set("vp", vp);
   return target.toString();
 }
 

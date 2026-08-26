@@ -66,7 +66,7 @@ export function PopupApp() {
   const submitUrl = async (event: FormEvent) => {
     event.preventDefault();
     if (!inputValid) {
-      setError("지원하는 치지직 또는 SOOP 라이브 링크를 입력해 주세요.");
+      setError("지원하는 공개 라이브 링크를 입력해 주세요.");
       return;
     }
     try {
@@ -142,7 +142,7 @@ export function PopupApp() {
               setInput(event.target.value);
               setError("");
             }}
-            placeholder="치지직 또는 SOOP 라이브 링크"
+            placeholder="공개 라이브 링크"
             aria-invalid={input.length > 0 && !inputValid}
           />
           <button type="submit" aria-label="방송 추가" disabled={!inputValid || submitting}>

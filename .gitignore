@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+.split-view-dev/
 split-view.zip
 .DS_Store
 *.tsbuildinfo

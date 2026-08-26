@@ -13,7 +13,7 @@ export function AddDialog({ onAdd, onClose }: { onAdd(source: StreamSource): voi
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!valid) {
-      setError("지원하는 치지직 또는 SOOP 라이브 링크를 입력해 주세요.");
+      setError("지원하는 공개 라이브 링크를 입력해 주세요.");
       return;
     }
     try {
@@ -34,7 +34,7 @@ export function AddDialog({ onAdd, onClose }: { onAdd(source: StreamSource): voi
           </div>
           <CloseButton onClick={onClose} />
         </header>
-        <p>치지직 또는 SOOP의 공개 라이브 링크를 입력하세요.</p>
+        <p>지원하는 플랫폼의 공개 라이브 링크를 입력하세요.</p>
         <form onSubmit={(event) => void submit(event)}>
           <label htmlFor="player-stream-url" className="sr-only">라이브 링크</label>
           <input

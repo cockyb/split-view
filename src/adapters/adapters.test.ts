@@ -35,14 +35,41 @@ describe("platform URL adapters", () => {
 });
 
 describe("playback session rewriting", () => {
-  it("extracts the CHZZK HLS path and carries signed context to child resources", () => {
+  it("extracts CHZZK HLS paths from Naver and Akamai CDN responses", () => {
     const session = parseChzzkPlaybackJson(JSON.stringify({
       media: [{ mediaId: "HLS", protocol: "HLS", path: "https://nvelop-livecloud.pstatic.net/live/master.m3u8?hdnts=signed&vp=abc" }]
     }), "chzzk:test:live");
     expect(session.urlRewriteMode).toBe("chzzk-bgda");
-    const rewritten = new URL(rewriteChzzkMediaUrl("720/playlist.m3u8", session.manifestUrl));
-    expect(rewritten.searchParams.get("__bgda__")).toBe("signed");
-    expect(rewritten.searchParams.get("vp")).toBe("abc");
+
+    expect(() => parseChzzkPlaybackJson(JSON.stringify({
+      media: [{
+        mediaId: "HLS",
+        protocol: "HLS",
+        path: "https://livecloud.akamaized.net/chzzk/live/master.m3u8?hdnts=signed"
+      }]
+    }), "chzzk:akamai:live")).not.toThrow();
+    expect(() => parseChzzkPlaybackJson(JSON.stringify({
+      media: [{
+        mediaId: "HLS",
+        protocol: "HLS",
+        path: "https://livecloud.akamaized.net/unrelated/master.m3u8?hdnts=signed"
+      }]
+    }), "chzzk:invalid:live")).toThrow();
+  });
+
+  it("adds CHZZK background-download auth only to m4v segments", () => {
+    const manifest = "https://nvelop-livecloud.pstatic.net/chzzk/live/master.m3u8?hdnts=st=1~exp=2~acl=*/stream/*~hmac=abc&vp=unused";
+
+    expect(rewriteChzzkMediaUrl("720/playlist.m3u8", manifest)).toBe(
+      "https://nvelop-livecloud.pstatic.net/chzzk/live/720/playlist.m3u8"
+    );
+    expect(rewriteChzzkMediaUrl("720/segment.ts", manifest)).toBe(
+      "https://nvelop-livecloud.pstatic.net/chzzk/live/720/segment.ts"
+    );
+
+    const segment = rewriteChzzkMediaUrl("720/segment.m4v?part=1", manifest);
+    expect(segment).toContain("part=1&__bgda__=st=1~exp=2~acl=%2A%2Fstream%2F%2A~hmac=abc");
+    expect(segment).not.toContain("vp=");
   });
 
   it("appends SOOP AID without duplicating it", () => {

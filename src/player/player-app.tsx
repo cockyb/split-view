@@ -300,7 +300,7 @@ export function PlayerApp() {
                 <ArrowsClockwise size={16} weight="light" /> 지난 구성 복원 · {snapshot.sources.length}개
               </button>
             )}
-            <small>CHZZK · SOOP</small>
+            <small>MULTI STREAM PLAYER</small>
           </Bezel>
         </div>
       ) : (
